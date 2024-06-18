@@ -1,7 +1,9 @@
 # Grape Detection and Tracking Using Deep Neural Networks
 This Repository allows modular grape detection and tracking using detection models like Faster R-CNN, Mask R-CNN, etc. and tracking algorithms like SORT, DeepSORT, ByteTrack, etc. 
 
-[![Grape Detection and Tracking](https://jumpshare.com/embed/SAF9DBAjWNfwSKXCztF2)](https://www.youtube.com/watch?v=QXpD1_R7mbo)
+[![Grape Detection and Tracking](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=QXpD1_R7mbo)
+
+[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)
 
 
 
