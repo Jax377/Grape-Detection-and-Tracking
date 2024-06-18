@@ -3,7 +3,7 @@ This Repository allows modular grape detection and tracking using detection mode
 
 [![Grape Detection and Tracking](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=QXpD1_R7mbo)
 
-[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)
+
 
 
 
