@@ -2,7 +2,3 @@
 	path = lib1
 	url = https://github.com/Jax377/Altered-MMCV
 	branch = main
-[submodule "lib2"]
-	path = lib2
-	url = https://github.com/Jax377/Altered-MMTracking
-	branch = main
