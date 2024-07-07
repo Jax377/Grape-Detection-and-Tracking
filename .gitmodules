@@ -2,3 +2,7 @@
 	path = altered-mmtracking
 	url = https://github.com/Jax377/Altered-MMTracking.git
 	branch = main
+[submodule "altered-mmcv"]
+	path = altered-mmcv
+	url = https://github.com/Jax377/Altered-MMCV.git
+	branch = main
