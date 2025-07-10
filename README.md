@@ -15,164 +15,145 @@ This Repository contains two submodules. The submodule "lib1" contains an altere
 
 ---
 
-## 🍇 Full Configuration Details
+## 📦 Mask R-CNN Configuration
 
-This repository supports the paper _"Enhanced Grape Tracking Using Deep Neural Networks"_ and documents every detail required to reproduce the results.
+This section outlines all components of the **Mask R-CNN** detector used across all tracking algorithms.
 
----
-
-### 📦 Mask R-CNN Detector Configuration
-
-The detector used in all tracking algorithms is a customized **Mask R-CNN** network trained on the UAV RGB Video Dataset. The goal is reliable detection and segmentation of grape clusters.
-
-#### 🧠 Architecture Summary
+### 🔍 Detector Configuration Table
 
 | Component | Setting |
 |----------|---------|
-| **Backbone** | ResNet-50, 4 stages (Stage 1 frozen), pretrained on COCO |
+| **Backbone** | ResNet-50 (4 stages, Stage 1 frozen) |
+|            | Pretrained on the COCO dataset |
 | **Neck** | Feature Pyramid Network (FPN) |
-| **Input Resolution** | 4096×2160 px |
-| **RoI Alignment** | Used for both bbox and mask branches |
-
-#### 🔧 Region Proposal Network (RPN)
-
-| Parameter | Value |
-|----------|-------|
-| Anchors | (8×8), (8×16), (16×8) |
-| Strides | 4, 8, 16, 32, 64 |
-| IoU Threshold (Positive) | > 0.7 |
-| IoU Threshold (Negative) | < 0.3 |
-| Number of Proposals (pre/post NMS) | 2000 → 1000 |
-| NMS Threshold | 0.6 |
-| Bbox Coder | Mean: [0,0,0,0]; Std: [1,1,1,1] |
-| Losses | L1 for bbox, Cross-Entropy for classification |
-
-#### 🎯 RoI Head & Output
-
-| Parameter | Value |
-|----------|-------|
-| BBox Head | 2 FC layers, 1024 units each |
-| BBox Output Coder | Mean: [0,0,0,0]; Std: [0.1,0.1,0.2,0.2] |
-| Mask Head | 4 Conv layers → (28×28) binary mask |
-| Losses | L1 for bbox, Cross-Entropy for classification & masks |
-| Output Classes | 1 (grape clusters) |
-
-#### 🧪 Training Settings
-
-| Parameter | Value |
-|----------|-------|
-| Training Set Size | 528 annotated images |
-| Test Set Size | 136 annotated images |
-| Epochs | 25 |
-| Optimizer | SGD (momentum 0.9) or Adam |
-| Weight Decay | 0.0001 |
-| Learning Rate Scheduler | Warm-up → decay after 3 epochs |
-| Batch Size | 2 images per GPU |
-| Mask Threshold | 0.5 |
-
-#### 🔄 Data Augmentation (Train)
-
-| Transformation | Value |
-|----------------|-------|
-| Brightness | ±50% |
-| Contrast | ±50% |
-| Saturation | ±50% |
-| Hue | ±18° shift in HSV |
-| Flip | 50% probability (horizontal) |
-| Normalization Mean | [123.675, 116.28, 103.53] |
-| Normalization Std | [58.395, 57.12, 57.375] |
-| Padding | Image padded to dimensions divisible by 32 |
+| In Channels | (1088×2048×256), (544×1024×512), (272×512×1024), (136×256×2048) |
+| Out Channels | (1088×2048×256), (544×1024×256), (272×512×256), (136×256×256), (68×128×256) |
+| **Region Proposal Network Head** | |
+| In Channels | same as FPN output |
+| Anchor Generator | (8×8), (8×16), (16×8) with strides 4, 8, 16, 32, 64 |
+| Bbox `[x, y, h, w]` Coder | mean = [0, 0, 0, 0], std = [1, 1, 1, 1] |
+| Bbox Loss | L1 loss |
+| Classification Loss | Cross-entropy |
+| **NMS (Non-Maximum Suppression)** | |
+| Proposals kept before NMS | 2000 |
+| Proposals kept after NMS | 1000 |
+| IoU Threshold | 0.6 |
+| **Region of Interest (RoI) Head** | RoI Align |
+| Bbox Branch Output | 7×7×256 |
+| Mask Branch Output | 14×14×256 |
+| Strides | 4, 8, 16, 32 |
+| **BBox Head** | 2 Fully Connected Layers |
+| In Channels | 7×7×256 |
+| Out Channels (per FC) | 1024 |
+| Classes | 1 |
+| Bbox Coder | mean = [0, 0, 0, 0], std = [0.1, 0.1, 0.2, 0.2] |
+| Bbox Loss | L1 loss |
+| Classification Loss | Cross-entropy |
+| **Mask Head** | 4 Convolutions |
+| In Channels | 14×14×256 |
+| Out Channels | 4×(14×14×256), then 28×28×256, then 28×28 |
+| Classes | 1 |
+| Mask Loss | Cross-entropy |
 
 ---
 
-### 📍 SORT Configuration
+## 🛠️ Tracker Configurations
 
-| Parameter | Value |
-|----------|-------|
-| Detector | Mask R-CNN |
-| Detection Confidence Threshold | 0.6 |
-| Track Termination | After 50 unmatched frames |
-| Track Confirmation | After 5 matched frames |
-| Kalman Filter Weights | Position: 1/10, Velocity: 1/80 |
-| Matching Method | Hungarian Algorithm on (1 - IoU) |
-| IoU Threshold | > 0.035 (3.5%) |
-
----
+Below are the exact configurations of all tracking algorithms used.
 
 ### 📍 SORT+ Configuration
 
-Enhanced version using multi-step matching:
-
-| Step | Similarity | Threshold |
-|------|------------|-----------|
-| 1 | IoU overlap | > 0.2 |
-| 2 | Mahalanobis Distance (cx, cy) | < 4.605 (χ², 0.9) |
-| 3 | IoU overlap | > 0.035 |
-| 4 | Euclidean Distance | < bbox_width + bbox_height / 2 |
-
-Other settings match SORT. Matching steps are executed sequentially via Hungarian Algorithm.
-
----
-
-### 📍 DeepSORT Configuration
-
 | Parameter | Value |
 |----------|-------|
-| Detector | Mask R-CNN |
-| Confidence Threshold | 0.6 |
-| Kalman Filter | Same as SORT |
-| Appearance Feature Extractor | ResNet-50 → Global Avg Pooling → FC Layer |
-| Feature Output Dim | 128 |
-| Feature Matching | Euclidean distance < 1.5 |
-| Mahalanobis Distance | < 10.597 (χ², 0.995) |
-| Fallback Matching | IoU overlap > 0.035 |
+| **Detector** | Mask R-CNN |
+| Confidence Score Threshold | 0.6 |
+| Frames until removing unmatched tracks | 50 |
+| Frames until confirming tentative tracks | 5 |
+| **Kalman Filter** | |
+| Position Weight | `w_p = 1/10` |
+| Velocity Weight | `w_v = 1/80` |
+| **Matching Steps (Hungarian Algorithm)** | |
+| 1. `1 - IoU-overlap` | Threshold: 0.8 |
+| 2. Mahalanobis Distance | Threshold: χ²₀.₉,₂ = 4.605 |
+|   Variables Used | (cₓ, cᵧ) |
+| 3. `1 - IoU-overlap` | Threshold: 0.965 |
+| 4. Euclidean Distance | Threshold: `w_pred + h_pred / 2` |
 
 ---
 
 ### 📍 DeepSORT+ Configuration
 
-DeepSORT+ adds three additional matching stages on top of DeepSORT:
-
-| Step | Similarity | Threshold |
-|------|------------|-----------|
-| 1 | Mahalanobis < 10.597 (χ² 0.995) + Feature Distance < 1.5 |
-| 2 | IoU overlap > 0.2 |
-| 3 | Mahalanobis < 4.605 (χ² 0.9) |
-| 4 | IoU overlap > 0.035 |
-| 5 | Euclidean Distance < bbox_width + bbox_height / 2 |
-
----
-
-### 📍 ByteTrack Configuration
-
-ByteTrack uses confidence-based splitting of detections:
-
-| Type | Confidence |
-|------|------------|
-| High Confidence | > 0.6 |
-| Low Confidence | > 0.05 |
-| Track Initialization | Requires high-confidence detection |
-
-| Stage | Matching Target | IoU Threshold |
-|-------|------------------|----------------|
-| 1 | Confirmed ↔ High Conf | 0.965 |
-| 2 | Tentative ↔ High Conf | 0.915 |
-| 3 | Confirmed ↔ Low Conf | 0.8 |
-
----
-
-### 🧪 Classification Network for DeepSORT(+)
-
-| Component | Details |
-|----------|---------|
-| Backbone | ResNet-50 (ImageNet pretrained) |
+| Parameter | Value |
+|----------|-------|
+| **Detector** | Mask R-CNN |
+| Confidence Score Threshold | 0.6 |
+| Frames until removing unmatched tracks | 50 |
+| Frames until confirming tentative tracks | 5 |
+| **Kalman Filter** | |
+| Position Weight | `w_p = 1/10` |
+| Velocity Weight | `w_v = 1/80` |
+| **Classification Network** | |
+| Backbone | ResNet-50 |
 | Neck | Global Average Pooling |
-| Head | FC: 2048 → 1024 → 128 |
-| Classes | 586 |
-| Loss | Cross-Entropy + Triplet Loss (margin: 0.5) |
-| Optimizer | Adam or SGD |
-| Input Size | 128 × 256 |
-| Normalization | Same as Mask R-CNN |
-| Flip Augmentation | 50% |
+| Head | 1 Fully Connected Layer |
+| **Matching Steps (Hungarian Algorithm)** | |
+| 1. Appearance Features + Mahalanobis Distance | Mahalanobis < 10.597, Feature Distance < 1.5 |
+|   Variables Used | (cₓ, cᵧ) |
+| 2. `1 - IoU-overlap` | Threshold: 0.8 |
+| 3. Mahalanobis Distance | Threshold: χ²₀.₉₉₅,₂ = 4.605 |
+| 4. `1 - IoU-overlap` | Threshold: 0.965 |
+| 5. Euclidean Distance | Threshold: `w_pred + h_pred / 2` |
+
+---
+
+### 📍 Mask R-CNN Training Configuration
+
+| Component | Setting |
+|----------|---------|
+| **Anchor Assignment** | |
+| Positive Anchors | IoU > 0.7 |
+| Negative Anchors | IoU < 0.3 |
+| Low Quality Matches | Anchors with IoU > 0.3 |
+| Random Samples | 256 (50% positive) |
+| **Mask/BBox Assignment** | |
+| Positive/Negative Threshold | IoU = 0.5 |
+| Random Samples | 512 (25% positive), ground truth included |
+| Mask Binary Threshold | 0.5 |
+| **Maximum Epochs** | 25 |
+
+---
+
+### 📷 Data Transformations (Mask R-CNN)
+
+| Transformation | Value |
+|----------------|-------|
+| Brightness Adjustment | Scalar ∈ [0.5, 1.5] |
+| Contrast Adjustment | Scalar ∈ [0.5, 1.5] |
+| Saturation Adjustment | Scalar ∈ [0.5, 1.5] |
+| Hue Adjustment | Degrees ∈ [–18, 18] using HSV rotation |
+| Horizontal Flip | 50% chance |
+| Normalization Mean | [123.675, 116.28, 103.53] |
+| Normalization Std | [58.395, 57.12, 57.375] |
+| Padding | Pad to dimensions divisible by 32 |
+
+---
+
+### 📷 Data Transformations (Classification Network)
+
+| Transformation | Value |
+|----------------|-------|
+| Resize | (128, 256) |
+| Horizontal Flip | 50% chance |
+| Normalization Mean | [123.675, 116.28, 103.53] |
+| Normalization Std | [58.395, 57.12, 57.375] |
+
+---
+
+If you use this configuration in your own work, please cite:
+
+> Jacob Piazolo & Benedikt Fischer (2025).  
+> _Enhanced Grape Tracking Using Deep Neural Networks with an Extended Matching Algorithm for SORT and DeepSORT_.  
+> Computers and Electronics in Agriculture.
+
 
 
